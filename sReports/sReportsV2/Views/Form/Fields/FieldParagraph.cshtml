@@ -1,0 +1,50 @@
+﻿@using sReportsV2.DTOs.Field.DataOut;
+@using Microsoft.AspNetCore.Html
+
+@model FieldParagraphDataOut
+@{
+    bool isChapterReadonly = ViewBag.Chapter;
+    string fieldSetId = ViewBag.FieldSetId;
+}
+
+<fieldset @Html.Raw(Model.DependentAttributes) class="form-element form-input position-relative field-set-content @Model.ShowHiddenFieldsClass"  >
+    <div class="repetitive-values d-inline-block form-input-size">
+        @{
+            AddField(Html, Model, isChapterReadonly, fieldSetId);
+        }
+    </div>
+</fieldset>
+
+@functions {
+    private void AddField(Microsoft.AspNetCore.Mvc.Rendering.IHtmlHelper html, FieldStringDataOut objectModel, bool isChapterReadonly, string fieldSetId, string additionalFieldClass = "", string additionalInputClass = "")
+    {
+        AddField(html, objectModel, isChapterReadonly, fieldSetId, 1, "", objectModel.IsRepetitive, additionalFieldClass, additionalInputClass);
+    }
+
+    private void AddField(Microsoft.AspNetCore.Mvc.Rendering.IHtmlHelper html, FieldDataOut objectModel, bool isChapterReadonly, string fieldSetId, int repetitiveCounter, string repetitiveValue, bool isRepetitive, string additionalFieldClass, string additionalInputClass, string customLabel = "")
+    {
+        string fieldInstanceRepetitionId = Model.GetFieldInstanceRepetitionInfo(0).Item1;
+        <div class="field-group @additionalFieldClass">
+            <div for="@fieldInstanceRepetitionId" class="filter-label form-label-size d-inline-block">
+                @html.Raw(objectModel.FullLabel)
+            </div>
+            <div class="repetitive-field filter-input d-inline-block @additionalInputClass" id="@fieldInstanceRepetitionId">
+                @{
+                    AddInput(html, Model, isChapterReadonly, fieldSetId, repetitiveCounter, repetitiveValue, isRepetitive);
+                }
+            </div>
+        </div>
+    }
+
+    private void AddInput(Microsoft.AspNetCore.Mvc.Rendering.IHtmlHelper html, FieldParagraphDataOut objectModel, bool isChapterReadonly, string fieldSetId, int repetitiveCounter, string repetitiveValue, bool isRepetitive)
+    {
+        AddLongTextInput(objectModel);
+    }
+
+    private void AddLongTextInput(FieldParagraphDataOut objectModel)
+    {
+        <div class="paragraph-font">
+            @(new HtmlString(Model.Paragraph))
+        </div>
+    }
+}

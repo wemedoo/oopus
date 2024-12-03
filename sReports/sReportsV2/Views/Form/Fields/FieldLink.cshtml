@@ -1,0 +1,55 @@
+@using sReportsV2.Common.Helpers
+@using sReportsV2.DTOs.Field.DataOut;
+
+@model FieldLinkDataOut
+@{
+    bool isChapterReadonly = ViewBag.Chapter;
+    string fieldSetId = ViewBag.FieldSetId;
+}
+
+<fieldset @Html.Raw(Model.DependentAttributes) class="form-element form-input position-relative field-set-content @Model.ShowHiddenFieldsClass"  >
+    <div class="repetitive-values d-inline-block form-input-size">
+        @{
+            AddField(Html, Model, isChapterReadonly, fieldSetId);
+        }
+    </div>
+</fieldset>
+
+@functions {
+    private void AddField(Microsoft.AspNetCore.Mvc.Rendering.IHtmlHelper html, FieldStringDataOut objectModel, bool isChapterReadonly, string fieldSetId, string additionalFieldClass = "", string additionalInputClass = "")
+    {
+        AddField(html, objectModel, isChapterReadonly, fieldSetId, 1, "", objectModel.IsRepetitive, additionalFieldClass, additionalInputClass);
+    }
+
+    private void AddField(Microsoft.AspNetCore.Mvc.Rendering.IHtmlHelper html, FieldDataOut objectModel, bool isChapterReadonly, string fieldSetId, int repetitiveCounter, string repetitiveValue, bool isRepetitive, string additionalFieldClass, string additionalInputClass, string customLabel = "")
+    {
+        string fieldInstanceRepetitionId = Model.GetFieldInstanceRepetitionInfo(0).Item1;
+
+        <div class="field-group @additionalFieldClass">
+            <div for="@fieldInstanceRepetitionId" class="filter-label form-label-size d-inline-block">
+                @html.Raw(objectModel.FullLabel)
+            </div>
+            <div class="repetitive-field filter-input d-inline-block @additionalInputClass">
+                @{
+                    AddInput(html, Model, isChapterReadonly, fieldSetId, repetitiveCounter, repetitiveValue, isRepetitive);
+                }
+            </div>
+        </div>
+    }
+
+    private void AddInput(Microsoft.AspNetCore.Mvc.Rendering.IHtmlHelper html, FieldLinkDataOut objectModel, bool isChapterReadonly, string fieldSetId, int repetitiveCounter, string repetitiveValue, bool isRepetitive)
+    {
+        AddLinkInput(html, objectModel, isChapterReadonly, fieldSetId, repetitiveCounter, repetitiveValue, isRepetitive);
+    }
+
+    private void AddLinkInput(Microsoft.AspNetCore.Mvc.Rendering.IHtmlHelper html, FieldLinkDataOut objectModel, bool isChapterReadonly, string fieldSetId, int repetitiveCounter, string repetitiveValue, bool isRepetitive)
+    {
+        string fieldInstanceRepetitionId = Model.GetFieldInstanceRepetitionInfo(0).Item1;
+
+        <a id="@fieldInstanceRepetitionId" href="@(objectModel != null && objectModel.Link != null ? objectModel.Link : "")" target="_blank" rel="noopener">
+            @(objectModel != null && objectModel.Link != null ? objectModel.Link : "")
+        </a>
+    }
+}
+
+@Html.Raw(ScriptHelper.RenderScript(Url.Content("~/js/sReports/designer/designer-items/fields/linkField.js"), "", ""))

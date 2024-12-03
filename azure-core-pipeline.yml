@@ -1,0 +1,78 @@
+trigger:
+- dev
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  solution: '**/sReports.sln'
+  buildPlatform: 'Any CPU'
+  buildConfiguration: 'Release'
+
+steps:
+- task: UseDotNet@2
+  inputs:
+    packageType: 'sdk'
+    version: '8.x'
+    installationPath: $(Agent.ToolsDirectory)/dotnet
+
+- task: NuGetToolInstaller@1
+  inputs:
+    checkLatest: true
+
+- task: NuGetCommand@2
+  inputs:
+    restoreSolution: '$(solution)'
+
+- task: SonarQubePrepare@7
+  inputs:
+    SonarQube: 'SonarQube'
+    scannerMode: 'dotnet'
+    projectKey: 'sReports_sReports_adcba3c0-3e09-4be3-bdb8-00eae288f1e6'
+    sonarHostUrl: 'http://20.111.59.193:9000'
+    extraProperties: |
+      sonar.exclusions=**/bin/**,**/obj/**
+      sonar.scanner.scanAll=false
+
+
+- task: PowerShell@2
+  inputs:
+    targetType: 'inline'
+    script: |
+      # Check if the SONARQUBE_SCANNER_PARAMS environment variable is set and not empty
+      if ($env:SONARQUBE_SCANNER_PARAMS) {
+        # Convert the JSON string to a PowerShell object
+        $params = $env:SONARQUBE_SCANNER_PARAMS | ConvertFrom-Json
+        # Remove the sonar.branch.name property if it exists
+        if ($params.PSObject.Properties['sonar.branch.name']) {
+          $params.PSObject.Properties.Remove('sonar.branch.name')
+        }
+        # Update the SONARQUBE_SCANNER_PARAMS environment variable
+        $env:SONARQUBE_SCANNER_PARAMS = $params | ConvertTo-Json
+        Write-Host "##vso[task.setvariable variable=SONARQUBE_SCANNER_PARAMS]$($env:SONARQUBE_SCANNER_PARAMS)"
+      }
+      else {
+        Write-Host "SONARQUBE_SCANNER_PARAMS is not set or is empty."
+      }
+    displayName: 'Remove branch name from SONARQUBE_SCANNER_PARAMS'
+
+- task: VSBuild@1
+  inputs:
+    solution: '$(solution)'
+    msbuildArgs: '/p:PrecompileBeforePublish=false /p:UseMerge=true /p:SingleAssemblyName=AppCode /p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="$(Build.ArtifactStagingDirectory)"'
+    platform: '$(buildPlatform)'
+    configuration: '$(buildConfiguration)'
+    maximumCpuCount: true
+
+- task: SonarQubeAnalyze@7
+  inputs:
+    sonarQube: 'SonarQube'
+
+- task: SonarQubePublish@7
+  inputs:
+    pollingTimeoutSec: '300'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'drop'
